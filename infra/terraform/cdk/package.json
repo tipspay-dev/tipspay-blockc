@@ -1,0 +1,22 @@
+{
+  "name": "tipspay-blockc-cdk",
+  "version": "1.0.0",
+  "bin": {
+    "tipspay-blockc": "bin/tipspay-blockc.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "deploy": "cdk deploy",
+    "synth": "cdk synth"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.132.0",
+    "constructs": "10.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
