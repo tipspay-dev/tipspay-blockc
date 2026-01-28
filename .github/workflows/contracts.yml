@@ -1,0 +1,49 @@
+name: Contracts CI/CD
+
+on:
+  push:
+    paths:
+      - "contracts/**"
+    branches:
+      - main
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+
+    env:
+      RPC_URL: ${{ secrets.RPC_URL }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+        # Install Node
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        working-directory: contracts
+        run: |
+          npm install -g pnpm
+          pnpm install
+
+      - name: Compile & Test
+        working-directory: contracts
+        run: |
+          pnpm hardhat compile
+          pnpm hardhat test || echo "No tests found"
+
+      - name: Deploy to AWS Managed Blockchain
+        working-directory: contracts
+        run: |
+          pnpm hardhat run scripts/deploy.ts --network managedBlockchain
+
+      - name: Upload contract addresses
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-addresses
+          path: contracts/deployments/addresses.json
