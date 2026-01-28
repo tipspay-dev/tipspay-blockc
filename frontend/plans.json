@@ -1,0 +1,22 @@
+{
+  "plans": [
+    {
+      "id": "basic",
+      "name": "Basic Hosting",
+      "priceUsd": 5,
+      "description": "1 GB SSD, 1 Website, Free SSL"
+    },
+    {
+      "id": "pro",
+      "name": "Pro Hosting",
+      "priceUsd": 10,
+      "description": "5 GB SSD, 5 Websites, Free SSL"
+    },
+    {
+      "id": "business",
+      "name": "Business Hosting",
+      "priceUsd": 20,
+      "description": "20 GB SSD, Unlimited Websites, Free SSL"
+    }
+  ]
+}
