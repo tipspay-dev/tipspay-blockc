@@ -1,1 +1,7 @@
+{
+  "app": "node dist/bin/tipspay-blockc.js",
+  "context": {
+    "@aws-cdk/core:newStyleStackSynthesis": true
+  }
+}
 
