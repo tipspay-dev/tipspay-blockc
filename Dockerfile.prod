@@ -1,25 +1,19 @@
-# -----------------------------
-# TIPSPAY BLOCKCHAIN DOCKERFILE
-# Go Node Version
-# -----------------------------
-
-FROM golang:1.22-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
+# Backend
+COPY backend/package*.json ./backend/
+RUN cd backend && npm install
 
-COPY . .
+# Contracts
+COPY contracts/package*.json ./contracts/
+RUN cd contracts && npm install && npx hardhat compile
 
-RUN go build -o tipspay-node ./cmd/node
+# Copy source
+COPY backend ./backend
+COPY contracts ./contracts
 
-FROM alpine:3.19
+EXPOSE 3000
 
-WORKDIR /app
-
-COPY --from=builder /app/tipspay-node .
-
-EXPOSE 26656 26657 8545
-
-CMD ["./tipspay-node"]
+CMD ["sh", "-c", "cd backend && npm start"]
