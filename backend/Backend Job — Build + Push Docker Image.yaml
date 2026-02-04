@@ -1,0 +1,17 @@
+  backend:
+    needs: contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build image
+        run: docker build -t $REGISTRY:$IMAGE_TAG .
+
+      - name: Push image
+        run: docker push $REGISTRY:$IMAGE_TAG
+
+      - name: Export image tag
+        run: echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
