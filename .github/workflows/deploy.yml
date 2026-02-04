@@ -1,0 +1,65 @@
+name: CI/CD – Tipspay Blockchain
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+env:
+  IMAGE_NAME: tipspay-blockc
+  REGISTRY: ghcr.io
+  REGISTRY_USER: ${{ github.actor }}
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Install contract dependencies
+        run: |
+          cd contracts
+          npm ci
+
+      - name: Compile contracts
+        run: |
+          cd contracts
+          npx hardhat compile
+
+      - name: Run contract tests
+        run: |
+          cd contracts
+          npx hardhat test
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG=${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+          docker build -t $REGISTRY/$REGISTRY_USER/$IMAGE_NAME:$IMAGE_TAG .
+          docker push $REGISTRY/$REGISTRY_USER/$IMAGE_NAME:$IMAGE_TAG
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      # ...
