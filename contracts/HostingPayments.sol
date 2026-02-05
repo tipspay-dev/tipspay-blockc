@@ -33,7 +33,11 @@ contract HostingPaymentsUpgradeable is Initializable, UUPSUpgradeable, AccessCon
         _disableInitializers();
     }
 
-    function initialize(address _admin, address _treasury, address[] calldata _initialTokens) public initializer {
+    function initialize(
+        address _admin,
+        address _treasury,
+        address[] calldata _initialTokens
+    ) public initializer {
         require(_admin != address(0), "Admin required");
         require(_treasury != address(0), "Treasury required");
 
@@ -53,7 +57,11 @@ contract HostingPaymentsUpgradeable is Initializable, UUPSUpgradeable, AccessCon
         }
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {}
 
     function setTreasury(address _treasury) external onlyRole(TREASURY_MANAGER_ROLE) {
         require(_treasury != address(0), "Invalid treasury");
