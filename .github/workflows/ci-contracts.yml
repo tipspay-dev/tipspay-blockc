@@ -10,7 +10,7 @@ on:
       environment:
         description: "Override environment (staging/prod)"
         required: false
-        default: ""
+        default: "staging"
       action:
         description: "deploy | upgrade"
         required: false
@@ -45,7 +45,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -69,18 +69,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-contracts-buildx-
 
-      - name: Deploy all contracts (multi-contract orchestration)
+      - name: Deploy all contracts
         if: env.ACTION == 'deploy'
         run: |
-          echo "Environment: $ENVIRONMENT"
           pnpm hardhat run scripts/deployHostingPayments.ts --network $ENVIRONMENT
           pnpm hardhat run scripts/deployTPSC.ts --network $ENVIRONMENT
           pnpm hardhat run scripts/deployBDOIRegistry.ts --network $ENVIRONMENT
 
-      - name: Upgrade all contracts (proxy upgrade pipeline)
+      - name: Upgrade all contracts
         if: env.ACTION == 'upgrade'
         run: |
-          echo "Environment: $ENVIRONMENT"
           pnpm hardhat run scripts/upgradeHostingPayments.ts --network $ENVIRONMENT
           pnpm hardhat run scripts/upgradeTPSC.ts --network $ENVIRONMENT
           pnpm hardhat run scripts/upgradeBDOIRegistry.ts --network $ENVIRONMENT
