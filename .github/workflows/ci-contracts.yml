@@ -1,0 +1,52 @@
+# .github/workflows/ci-contracts.yml (CI/CD – contracts için minimal örnek)
+name: CI-Contracts-HostingPayments
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Override environment (staging/prod)"
+        required: false
+        default: ""
+
+env:
+  ENVIRONMENT: ${{ inputs.environment != '' && inputs.environment || (github.ref_name == 'main' && 'prod' || 'staging') }}
+
+jobs:
+  contracts-deploy:
+    runs-on: ubuntu-latest
+    env:
+      STAGING_RPC_URL: ${{ secrets.STAGING_RPC_URL }}
+      PROD_RPC_URL: ${{ secrets.PROD_RPC_URL }}
+      STAGING_DEPLOYER_KEY: ${{ secrets.STAGING_DEPLOYER_KEY }}
+      PROD_DEPLOYER_KEY: ${{ secrets.PROD_DEPLOYER_KEY }}
+      HOSTING_ADMIN: ${{ secrets[format('HOSTING_ADMIN_{0}', env.ENVIRONMENT)] }}
+      HOSTING_TREASURY: ${{ secrets[format('HOSTING_TREASURY_{0}', env.ENVIRONMENT)] }}
+      HOSTING_ALLOWED_TOKENS: ${{ secrets[format('HOSTING_ALLOWED_TOKENS_{0}', env.ENVIRONMENT)] }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile contracts
+        run: pnpm hardhat compile
+
+      - name: Deploy HostingPayments (UUPS)
+        run: pnpm hardhat run scripts/deployHostingPayments.ts --network ${{ env.ENVIRONMENT }}
