@@ -1,17 +1,23 @@
+jobs:
   backend:
-    needs: contracts
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/backend
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Login to GHCR
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
 
-      - name: Build image
-        run: docker build -t $REGISTRY:$IMAGE_TAG .
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Push image
-        run: docker push $REGISTRY:$IMAGE_TAG
-
-      - name: Export image tag
-        run: echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+      - name: Build
+        run: pnpm build
