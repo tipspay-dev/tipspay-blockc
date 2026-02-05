@@ -1,17 +1,11 @@
-FROM node:20-slim AS builder
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-WORKDIR /app
-COPY . .
-
-WORKDIR /app/frontend
-RUN pnpm install --frozen-lockfile
-RUN pnpm build
-
-FROM nginx:stable-alpine AS runtime
-
-COPY --from=builder /app/frontend/dist /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+- name: Build & Push Frontend Image
+  run: |
+    IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tipspay-frontend:${ENVIRONMENT}
+    docker buildx build \
+      --cache-from type=local,src=/tmp/.buildx-cache \
+      --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
+      -f frontend/Dockerfile \
+      frontend \
+      -t $IMAGE \
+      --load
+    docker push $IMAGE
