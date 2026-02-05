@@ -1,4 +1,4 @@
-name: CI-Contracts-HostingPayments
+name: CI-Contracts
 
 on:
   push:
@@ -11,27 +11,31 @@ on:
         description: "Override environment (staging/prod)"
         required: false
         default: ""
+      action:
+        description: "deploy | upgrade"
+        required: false
+        default: "deploy"
 
 env:
   ENVIRONMENT: ${{ inputs.environment != '' && inputs.environment || (github.ref_name == 'main' && 'prod' || 'staging') }}
+  ACTION: ${{ inputs.action != '' && inputs.action || 'deploy' }}
 
 jobs:
-  contracts-deploy:
+  contracts:
     runs-on: ubuntu-latest
 
     env:
-      # RPC URLs
       STAGING_RPC_URL: ${{ secrets.STAGING_RPC_URL }}
       PROD_RPC_URL: ${{ secrets.PROD_RPC_URL }}
-
-      # Deployer keys
       STAGING_DEPLOYER_KEY: ${{ secrets.STAGING_DEPLOYER_KEY }}
       PROD_DEPLOYER_KEY: ${{ secrets.PROD_DEPLOYER_KEY }}
 
-      # Environment-aware secrets
       HOSTING_ADMIN: ${{ secrets[format('HOSTING_ADMIN_%s', env.ENVIRONMENT)] }}
       HOSTING_TREASURY: ${{ secrets[format('HOSTING_TREASURY_%s', env.ENVIRONMENT)] }}
       HOSTING_ALLOWED_TOKENS: ${{ secrets[format('HOSTING_ALLOWED_TOKENS_%s', env.ENVIRONMENT)] }}
+
+      TPSC_ADMIN: ${{ secrets[format('TPSC_ADMIN_%s', env.ENVIRONMENT)] }}
+      BDOI_ADMIN: ${{ secrets[format('BDOI_ADMIN_%s', env.ENVIRONMENT)] }}
 
     steps:
       - name: Checkout
@@ -47,15 +51,12 @@ jobs:
         with:
           version: 9
 
-      - name: Install dependencies
+      - name: Install deps
         run: pnpm install --frozen-lockfile
 
       - name: Compile contracts
         run: pnpm hardhat compile
 
-      # ---------------------------------------------------------
-      # Buildx cache (pipeline standardizasyonu için)
-      # ---------------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -67,8 +68,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-contracts-buildx-
 
-      # ---------------------------------------------------------
-      # DEPLOY
-      # ---------------------------------------------------------
-      - name: Deploy HostingPayments (UUPS)
-        run: pnpm hardhat run scripts/deployHostingPayments.ts --network ${{ env.ENVIRONMENT }}
+      - name: Deploy all contracts (multi-contract orchestration)
+        if: env.ACTION == 'deploy'
+        run: |
+          echo "Environment: $ENVIRONMENT"
+          pnpm hardhat run scripts/deployHostingPayments.ts --network $ENVIRONMENT
+          pnpm hardhat run scripts/deployTPSC.ts --network $ENVIRONMENT
+          pnpm hardhat run scripts/deployBDOIRegistry.ts --network $ENVIRONMENT
+
+      - name: Upgrade all contracts (proxy upgrade pipeline)
+        if: env.ACTION == 'upgrade'
+        run: |
+          echo "Environment: $ENVIRONMENT"
+          pnpm hardhat run scripts/upgradeHostingPayments.ts --network $ENVIRONMENT
+          pnpm hardhat run scripts/upgradeTPSC.ts --network $ENVIRONMENT
+          pnpm hardhat run scripts/upgradeBDOIRegistry.ts --network $ENVIRONMENT
