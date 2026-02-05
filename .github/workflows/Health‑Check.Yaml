@@ -1,14 +1,30 @@
-  healthcheck:
-    needs: infra
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for service
-        run: sleep 10
+name: Health-Check
 
-      - name: Check health endpoint
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Backend Health
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.$ENVIRONMENT.tipspaychain.com/health)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.tipspay.com/health)
           if [ "$STATUS" != "200" ]; then
-            echo "Health check failed"
+            echo "Backend unhealthy: $STATUS"
             exit 1
           fi
+
+      - name: Check Frontend Health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://app.tipspay.com)
+          if [ "$STATUS" != "200" ]; then
+            echo "Frontend unhealthy: $STATUS"
+            exit 1
+          fi
+
+      - name: Report Success
+        run: echo "All services healthy."
