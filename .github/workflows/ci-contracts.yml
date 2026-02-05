@@ -1,4 +1,3 @@
-# .github/workflows/ci-contracts.yml (CI/CD – contracts için minimal örnek)
 name: CI-Contracts-HostingPayments
 
 on:
@@ -19,14 +18,20 @@ env:
 jobs:
   contracts-deploy:
     runs-on: ubuntu-latest
+
     env:
+      # RPC URLs
       STAGING_RPC_URL: ${{ secrets.STAGING_RPC_URL }}
       PROD_RPC_URL: ${{ secrets.PROD_RPC_URL }}
+
+      # Deployer keys
       STAGING_DEPLOYER_KEY: ${{ secrets.STAGING_DEPLOYER_KEY }}
       PROD_DEPLOYER_KEY: ${{ secrets.PROD_DEPLOYER_KEY }}
-      HOSTING_ADMIN: ${{ secrets[format('HOSTING_ADMIN_{0}', env.ENVIRONMENT)] }}
-      HOSTING_TREASURY: ${{ secrets[format('HOSTING_TREASURY_{0}', env.ENVIRONMENT)] }}
-      HOSTING_ALLOWED_TOKENS: ${{ secrets[format('HOSTING_ALLOWED_TOKENS_{0}', env.ENVIRONMENT)] }}
+
+      # Environment-aware secrets
+      HOSTING_ADMIN: ${{ secrets[format('HOSTING_ADMIN_%s', env.ENVIRONMENT)] }}
+      HOSTING_TREASURY: ${{ secrets[format('HOSTING_TREASURY_%s', env.ENVIRONMENT)] }}
+      HOSTING_ALLOWED_TOKENS: ${{ secrets[format('HOSTING_ALLOWED_TOKENS_%s', env.ENVIRONMENT)] }}
 
     steps:
       - name: Checkout
@@ -42,11 +47,29 @@ jobs:
         with:
           version: 9
 
-      - name: Install deps
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Compile contracts
         run: pnpm hardhat compile
 
+      # ---------------------------------------------------------
+      # OPTIONAL: Buildx cache (contracts rarely need Docker,
+      # but ekledim çünkü pipeline standardizasyonu istedin)
+      # ---------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-contracts-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-contracts-buildx-
+
+      # ---------------------------------------------------------
+      # DEPLOY
+      # ---------------------------------------------------------
       - name: Deploy HostingPayments (UUPS)
         run: pnpm hardhat run scripts/deployHostingPayments.ts --network ${{ env.ENVIRONMENT }}
