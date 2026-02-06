@@ -1,38 +1,41 @@
-FROM node:20-alpine AS runner
+# ---------- Builder ----------
+FROM node:20-alpine AS builder
 
-# Güvenli, küçük, production odaklı base
 ENV NODE_ENV=production
-
-# Non-root user oluştur
-RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
 
 WORKDIR /app
 
-# Minimal health-check server'ı dosya olarak oluştur
-RUN printf '%s\n' \
-"import http from 'http';" \
-"" \
-"const port = process.env.PORT || 3000;" \
-"" \
-"const server = http.createServer((req, res) => {" \
-"  if (req.url === '/health' || req.url === '/healthz') {" \
-"    res.writeHead(200, { 'Content-Type': 'application/json' });" \
-"    res.end(JSON.stringify({ status: 'ok', service: 'tipspay-blockc', timestamp: new Date().toISOString() }));" \
-"    return;" \
-"  }" \
-"" \
-"  res.writeHead(200, { 'Content-Type': 'text/plain' });" \
-"  res.end('TIPSPAY Blockchain Ecosystem – placeholder service is running.');" \
-"});" \
-"" \
-"server.listen(port, () => {" \
-"  console.log(\`tipspay-blockc placeholder listening on port \${port}\`);" \
-"});" \
-"" > server.mjs
+# Bağımlılıkları deterministik çöz
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Non-root user ile çalış
+# Tüm kaynak kodu al
+COPY . .
+
+# TypeScript / backend build
+# package.json içinde:
+# "build": "tsc" veya benzeri bir komut olduğunu varsayıyorum
+RUN npm run build
+
+
+# ---------- Runner ----------
+FROM node:20-alpine AS runner
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Non-root user
+RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
+
+# Sadece gerekli artifact ve bağımlılıklar
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json .
+
 USER nodeuser
 
 EXPOSE 3000
 
-CMD ["node", "server.mjs"]
+# index.ts → dist/index.js olacak şekilde
+CMD ["node", "dist/index.js"]
