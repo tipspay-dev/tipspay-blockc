@@ -1,29 +1,38 @@
-FROM node:20-alpine AS builder
-
-WORKDIR /app/frontend
-
-# Install dependencies
-COPY package*.json ./
-RUN npm install --production=false
-
-# Copy source
-COPY . .
-
-# Build
-RUN npm run build
-
-# -----------------------------
-# Production Image
-# -----------------------------
 FROM node:20-alpine AS runner
 
-WORKDIR /app/frontend
+# Güvenli, küçük, production odaklı base
+ENV NODE_ENV=production
 
-COPY --from=builder /app/frontend/package*.json ./
-RUN npm install --production
+# Non-root user oluştur
+RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
 
-COPY --from=builder /app/frontend/.next ./.next
-COPY --from=builder /app/frontend/public ./public
+WORKDIR /app
+
+# Minimal health-check server'ı dosya olarak oluştur
+RUN printf '%s\n' \
+"import http from 'http';" \
+"" \
+"const port = process.env.PORT || 3000;" \
+"" \
+"const server = http.createServer((req, res) => {" \
+"  if (req.url === '/health' || req.url === '/healthz') {" \
+"    res.writeHead(200, { 'Content-Type': 'application/json' });" \
+"    res.end(JSON.stringify({ status: 'ok', service: 'tipspay-blockc', timestamp: new Date().toISOString() }));" \
+"    return;" \
+"  }" \
+"" \
+"  res.writeHead(200, { 'Content-Type': 'text/plain' });" \
+"  res.end('TIPSPAY Blockchain Ecosystem – placeholder service is running.');" \
+"});" \
+"" \
+"server.listen(port, () => {" \
+"  console.log(\`tipspay-blockc placeholder listening on port \${port}\`);" \
+"});" \
+"" > server.mjs
+
+# Non-root user ile çalış
+USER nodeuser
 
 EXPOSE 3000
-CMD ["npm", "start"]
+
+CMD ["node", "server.mjs"]
