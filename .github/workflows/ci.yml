@@ -1,18 +1,21 @@
 
-name: CI
+name: CI-CD
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: ["main", "develop"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
-  # Automatically select environment:
   # main → production, develop → staging
   ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+  SHORT_SHA: ${{ github.sha[0:7] }}
 
 jobs:
+  ##############################
+  # 1. Install + Test (Root)
+  ##############################
   build-and-test:
     runs-on: ubuntu-latest
 
@@ -26,16 +29,38 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Install root deps (if monorepo)
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "No root-level package.json (monorepo)"
+          fi
+
+      - name: Install backend deps
+        working-directory: backend
         run: npm ci
 
       - name: Build backend
+        working-directory: backend
         run: npm run build
 
-      - name: Run tests
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run backend tests
+        working-directory: backend
         run: npm test
 
-  docker-build:
+  ##############################
+  # 2. Build Backend Image
+  ##############################
+  docker-build-backend:
     runs-on: ubuntu-latest
     needs: build-and-test
 
@@ -43,151 +68,79 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Build backend image
         run: |
           docker build \
-            --file Dockerfile.prod \
-            --tag tipspay-blockc:${{ env.ENVIRONMENT }} \
-            .
+            -f backend/Dockerfile \
+            -t tipspay-backend:${{ env.SHORT_SHA }} \
+            -t tipspay-backend:${{ env.ENVIRONMENT }} \
+            backend
 
-      - name: Verify container starts
-        run: |
-          docker run -d -p 3000:3000 --name tipspay-test tipspay-blockc:${{ env.ENVIRONMENT }}
-          sleep 3
-          curl -f http://localhost:3000/health || exit 1
-
-  hyperlift-deploy:
+  ##############################
+  # 3. Build Frontend Image
+  ##############################
+  docker-build-frontend:
     runs-on: ubuntu-latest
-    needs: docker-build
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f frontend/Dockerfile \
+            -t tipspay-frontend:${{ env.SHORT_SHA }} \
+            -t tipspay-frontend:${{ env.ENVIRONMENT }} \
+            frontend
+
+  ##############################
+  # 4. Deploy Backend to Hyperlift
+  ##############################
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: docker-build-backend
 
     env:
-      HYPERLIFT_API_TOKEN: ${{ secrets.HYPERLIFT_API_TOKEN }}
-      HYPERLIFT_DEPLOY_WEBHOOK: ${{ secrets.HYPERLIFT_DEPLOY_WEBHOOK }}
+      HAPI: ${{ secrets.HYPERLIFT_API_TOKEN }}
+      WH: ${{ secrets.HYPERLIFT_DEPLOY_WEBHOOK }}
       ENVIRONMENT: ${{ env.ENVIRONMENT }}
+      SHORT_SHA: ${{ env.SHORT_SHA }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Show deploy environment
-        run: echo "Deploying to environment: $ENVIRONMENT"
-
-      - name: Trigger Hyperlift deploy
+      - name: Deploy backend to Hyperlift
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer $HYPERLIFT_API_TOKEN" \
+          curl -X POST "$WH" \
+            -H "Authorization: Bearer $HAPI" \
             -H "Content-Type: application/json" \
             -d "{
-              \"service\": \"tipspay-blockc\",
+              \"service\": \"tipspay-backend\",
               \"environment\": \"${ENVIRONMENT}\",
-              \"image\": \"tipspay-blockc:${ENVIRONMENT}\"
-            }" \
-            "$HYPERLIFT_DEPLOY_WEBHOOK"
-      - name: Checkout
-        uses: actions/checkout@v4
+              \"image\": \"tipspay-backend:${SHORT_SHA}\"
+            }"
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            --file Dockerfile.prod \
-            --tag tipspay-blockc:latest \
-            .
-
-      - name: Verify container starts
-        run: |
-          docker run -d -p 3000:3000 --name tipspay-test tipspay-blockc:latest
-          sleep 3
-          curl -f http://localhost:3000/health || exit 1
-
-  hyperlift-deploy:
+  ##############################
+  # 5. Deploy Frontend to Hyperlift
+  ##############################
+  deploy-frontend:
     runs-on: ubuntu-latest
-    needs: docker-build
+    needs: docker-build-frontend
+
+    env:
+      HAPI: ${{ secrets.HYPERLIFT_API_TOKEN }}
+      WH: ${{ secrets.HYPERLIFT_DEPLOY_WEBHOOK }}
+      ENVIRONMENT: ${{ env.ENVIRONMENT }}
+      SHORT_SHA: ${{ env.SHORT_SHA }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # Örnek 1: Hyperlift deploy webhook'u ile
-      - name: Trigger Hyperlift deploy
+      - name: Deploy frontend to Hyperlift
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.HYPERLIFT_API_TOKEN }}" \
+          curl -X POST "$WH" \
+            -H "Authorization: Bearer $HAPI" \
             -H "Content-Type: application/json" \
-            -d '{
-              "service": "tipspay-blockc",
-              "environment": "production",
-              "image": "tipspay-blockc:latest"
-            }' \
-            "${{ secrets.HYPERLIFT_DEPLOY_WEBHOOK }}"
-name: CI
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build backend
-        run: npm run build
-
-      - name: Run tests
-        run: npm test
-
-  docker-build:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: |
-          docker build \
-            --file Dockerfile.prod \
-            --tag tipspay-blockc:latest \
-            .
-
-      - name: Verify container starts
-        run: |
-          docker run -d -p 3000:3000 --name tipspay-test tipspay-blockc:latest
-          sleep 3
-          curl -f http://localhost:3000/health || exit 1
-
-  hyperlift-deploy:
-    runs-on: ubuntu-latest
-    needs: docker-build
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # Örnek 1: Hyperlift deploy webhook'u ile
-      - name: Trigger Hyperlift deploy
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.HYPERLIFT_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "service": "tipspay-blockc",
-              "environment": "production",
-              "image": "tipspay-blockc:latest"
-            }' \
-            "${{ secrets.HYPERLIFT_DEPLOY_WEBHOOK }}"
+            -d "{
+              \"service\": \"tipspay-frontend\",
+              \"environment\": \"${ENVIRONMENT}\",
+              \"image\": \"tipspay-frontend:${SHORT_SHA}\"
+            }"
