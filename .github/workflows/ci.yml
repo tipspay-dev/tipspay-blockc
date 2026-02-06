@@ -1,10 +1,16 @@
+
 name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main" ]
+
+env:
+  # Automatically select environment:
+  # main → production, develop → staging
+  ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
 jobs:
   build-and-test:
@@ -34,6 +40,49 @@ jobs:
     needs: build-and-test
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --file Dockerfile.prod \
+            --tag tipspay-blockc:${{ env.ENVIRONMENT }} \
+            .
+
+      - name: Verify container starts
+        run: |
+          docker run -d -p 3000:3000 --name tipspay-test tipspay-blockc:${{ env.ENVIRONMENT }}
+          sleep 3
+          curl -f http://localhost:3000/health || exit 1
+
+  hyperlift-deploy:
+    runs-on: ubuntu-latest
+    needs: docker-build
+
+    env:
+      HYPERLIFT_API_TOKEN: ${{ secrets.HYPERLIFT_API_TOKEN }}
+      HYPERLIFT_DEPLOY_WEBHOOK: ${{ secrets.HYPERLIFT_DEPLOY_WEBHOOK }}
+      ENVIRONMENT: ${{ env.ENVIRONMENT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show deploy environment
+        run: echo "Deploying to environment: $ENVIRONMENT"
+
+      - name: Trigger Hyperlift deploy
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $HYPERLIFT_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"service\": \"tipspay-blockc\",
+              \"environment\": \"${ENVIRONMENT}\",
+              \"image\": \"tipspay-blockc:${ENVIRONMENT}\"
+            }" \
+            "$HYPERLIFT_DEPLOY_WEBHOOK"
       - name: Checkout
         uses: actions/checkout@v4
 
