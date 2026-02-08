@@ -1,0 +1,71 @@
+name: Configure tether-runtime (Enterprise Trust Layer)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - infra/tether-runtime.config.json
+
+jobs:
+  configure-tether-runtime:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Load config
+        id: cfg
+        run: |
+          CONFIG_FILE="infra/tether-runtime.config.json"
+          echo "CONFIG_FILE=$CONFIG_FILE" >> $GITHUB_OUTPUT
+
+      - name: Read base values
+        id: vals
+        run: |
+          CFG=${{ steps.cfg.outputs.CONFIG_FILE }}
+          API_ENDPOINT=$(jq -r '.tetherRuntime.apiEndpoint' "$CFG")
+          NETWORK=$(jq -r '.tetherRuntime.ethereum.network' "$CFG")
+          CONTRACT_ADDRESS=$(jq -r '.tetherRuntime.ethereum.contractAddress' "$CFG")
+          INTERVAL=$(jq -r '.tetherRuntime.pinning.intervalMinutes' "$CFG")
+
+          echo "API_ENDPOINT=$API_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "NETWORK=$NETWORK" >> $GITHUB_OUTPUT
+          echo "CONTRACT_ADDRESS=$CONTRACT_ADDRESS" >> $GITHUB_OUTPUT
+          echo "INTERVAL=$INTERVAL" >> $GITHUB_OUTPUT
+
+      - name: Configure contract address
+        run: |
+          curl -X POST \
+            "${{ steps.vals.outputs.API_ENDPOINT }}/v1/config/contract" \
+            -H "Authorization: Bearer ${{ secrets.TETHER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"contractAddress\": \"${{ steps.vals.outputs.CONTRACT_ADDRESS }}\"}"
+
+      - name: Configure network
+        run: |
+          curl -X POST \
+            "${{ steps.vals.outputs.API_ENDPOINT }}/v1/config/network" \
+            -H "Authorization: Bearer ${{ secrets.TETHER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"network\": \"${{ steps.vals.outputs.NETWORK }}\"}"
+
+      - name: Configure interval
+        run: |
+          curl -X POST \
+            "${{ steps.vals.outputs.API_ENDPOINT }}/v1/config/interval" \
+            -H "Authorization: Bearer ${{ secrets.TETHER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"minutes\": ${{ steps.vals.outputs.INTERVAL }}}"
+
+      - name: Start relay if enabled
+        run: |
+          ENABLED=$(jq -r '.tetherRuntime.pinning.enabled' ${{ steps.cfg.outputs.CONFIG_FILE }})
+          if [ "$ENABLED" = "true" ]; then
+            curl -X POST \
+              "${{ steps.vals.outputs.API_ENDPOINT }}/v1/relay/start" \
+              -H "Authorization: Bearer ${{ secrets.TETHER_API_KEY }}"
+          fi
