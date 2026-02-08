@@ -1,0 +1,46 @@
+configure_tether_runtime:
+  stage: deploy
+  image: alpine:3.19
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - CONFIG_FILE="infra/tether-runtime.config.json"
+    - API_ENDPOINT=$(jq -r '.tetherRuntime.apiEndpoint' "$CONFIG_FILE")
+    - NETWORK=$(jq -r '.tetherRuntime.ethereum.network' "$CONFIG_FILE")
+    - CONTRACT_ADDRESS=$(jq -r '.tetherRuntime.ethereum.contractAddress' "$CONFIG_FILE")
+    - INTERVAL=$(jq -r '.tetherRuntime.pinning.intervalMinutes' "$CONFIG_FILE")
+    - ENABLED=$(jq -r '.tetherRuntime.pinning.enabled' "$CONFIG_FILE")
+
+    # Configure contract
+    - |
+      curl -X POST \
+        "${API_ENDPOINT}/v1/config/contract" \
+        -H "Authorization: Bearer ${TETHER_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"contractAddress\": \"${CONTRACT_ADDRESS}\"}"
+
+    # Configure network
+    - |
+      curl -X POST \
+        "${API_ENDPOINT}/v1/config/network" \
+        -H "Authorization: Bearer ${TETHER_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"network\": \"${NETWORK}\"}"
+
+    # Configure interval
+    - |
+      curl -X POST \
+        "${API_ENDPOINT}/v1/config/interval" \
+        -H "Authorization: Bearer ${TETHER_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"minutes\": ${INTERVAL}}"
+
+    # Start relay if enabled
+    - |
+      if [ "$ENABLED" = "true" ]; then
+        curl -X POST \
+          "${API_ENDPOINT}/v1/relay/start" \
+          -H "Authorization: Bearer ${TETHER_API_KEY}"
+      fi
+  only:
+    - main
