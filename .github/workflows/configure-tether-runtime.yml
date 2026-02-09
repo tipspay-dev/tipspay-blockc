@@ -1,5 +1,8 @@
 name: Configure tether-runtime (Enterprise Trust Layer)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
