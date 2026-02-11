@@ -4,8 +4,26 @@
     "deployer": "",
     "txHash": "",
     "blockNumber": 0,
-    "verified": true,
-    "updatedAt": ""
+    "verified": false,
+    "version": "1.0.0",
+    "updatedAt": "2026-02-11T10:05:00+03:00"
+  },
+  "tipspay-testnet": {
+    "address": "",
+    "deployer": "",
+    "txHash": "",
+    "blockNumber": 0,
+    "verified": false,
+    "version": "1.0.0",
+    "updatedAt": "2026-02-11T10:05:00+03:00"
+  },
+  "tipspay-mainnet": {
+    "address": "",
+    "deployer": "",
+    "txHash": "",
+    "blockNumber": 0,
+    "verified": false,
+    "version": "1.0.0",
+    "updatedAt": "2026-02-11T10:05:00+03:00"
   }
 }
-
