@@ -1,4 +1,6 @@
 {
+  "version": "1.0.0",
+  "updatedAt": "2026-02-11T10:02:00+03:00",
   "chains": [
     "chains/tipspay-mainnet.json",
     "chains/tipspay-testnet.json",
@@ -8,5 +10,10 @@
     "contracts/wTPSC/deployments.json",
     "contracts/ComplianceManager/deployments.json",
     "contracts/AuditLog/deployments.json"
-  ]
+  ],
+  "schema": {
+    "chain": "schemas/chain.schema.json",
+    "contract": "schemas/contract.schema.json",
+    "registry": "schemas/registry.schema.json"
+  }
 }
