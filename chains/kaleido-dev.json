@@ -1,19 +1,43 @@
 {
-  "chainId": 0,
-  "name": "",
-  "network": "",
-  "rpcUrls": [],
+  "chainId": 84532,
+  "name": "TipspayChain Kaleido Dev",
+  "network": "kaleido-dev",
+  "rpcUrls": [
+    "https://<YOUR-KALEIDO-RPC-ENDPOINT>"
+  ],
   "blockExplorerUrls": [],
   "nativeCurrency": {
-    "name": "",
-    "symbol": "",
+    "name": "Tipspay Credit",
+    "symbol": "TPSC",
     "decimals": 18
   },
-  "contracts": {},
-  "features": [],
-  "governance": {},
-  "security": {},
+  "contracts": {
+    "wTPSC": {
+      "address": "",
+      "version": "1.0.0"
+    },
+    "ComplianceManager": {
+      "address": "",
+      "version": "1.0.0"
+    },
+    "AuditLog": {
+      "address": "",
+      "version": "1.0.0"
+    }
+  },
+  "features": [
+    "EIP-155",
+    "EIP-2718",
+    "EIP-2930"
+  ],
+  "security": {
+    "signatureScheme": "secp256k1",
+    "hashing": "keccak256"
+  },
+  "governance": {
+    "type": "centralized",
+    "operator": "Tipspay Blockchain Technologies Limited"
+  },
   "version": "1.0.0",
-  "updatedAt": ""
+  "updatedAt": "2026-02-11T10:00:00+03:00"
 }
-
