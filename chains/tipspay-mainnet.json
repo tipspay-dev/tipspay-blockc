@@ -1,19 +1,52 @@
 {
-  "chainId": 0,
-  "name": "",
-  "network": "",
-  "rpcUrls": [],
-  "blockExplorerUrls": [],
+  "chainId": 27182818,
+  "name": "TipspayChain Mainnet",
+  "network": "tipspay-mainnet",
+  "rpcUrls": [
+    "https://rpc.tipspaychain.com"
+  ],
+  "blockExplorerUrls": [
+    "https://explorer.tipspaychain.com"
+  ],
   "nativeCurrency": {
-    "name": "",
-    "symbol": "",
+    "name": "Tipspay Credit",
+    "symbol": "TPSC",
     "decimals": 18
   },
-  "contracts": {},
-  "features": [],
-  "governance": {},
-  "security": {},
+  "contracts": {
+    "wTPSC": {
+      "address": "",
+      "version": "1.0.0"
+    },
+    "ComplianceManager": {
+      "address": "",
+      "version": "1.0.0"
+    },
+    "AuditLog": {
+      "address": "",
+      "version": "1.0.0"
+    }
+  },
+  "features": [
+    "EIP-155",
+    "EIP-2718",
+    "EIP-2930",
+    "EIP-1559"
+  ],
+  "security": {
+    "signatureScheme": "secp256k1",
+    "hashing": "keccak256",
+    "audit": "external"
+  },
+  "governance": {
+    "type": "decentralized",
+    "validators": [
+      "Tipspay Blockchain Technologies Limited",
+      "Partner A",
+      "Partner B",
+      "Partner C"
+    ]
+  },
   "version": "1.0.0",
-  "updatedAt": ""
+  "updatedAt": "2026-02-11T10:00:00+03:00"
 }
-
