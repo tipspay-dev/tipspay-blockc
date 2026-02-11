@@ -9,21 +9,27 @@
     "https://explorer.tipspaychain.com"
   ],
   "nativeCurrency": {
-    "name": "Tipspay Credit",
+    "name": "Tipspay Coin",
     "symbol": "TPSC",
     "decimals": 18
   },
   "contracts": {
     "wTPSC": {
-      "address": "",
+      "address": "0x333d587427548ea0e671b163e2c9b7cba030f4ea",
       "version": "1.0.0"
     },
     "ComplianceManager": {
-      "address": "",
+      "address": "0xe18339c7270f22b78147919d69a807f242f73fa4",
       "version": "1.0.0"
     },
     "AuditLog": {
-      "address": "",
+      "address": "0x69eae248fe9cad31ae1f810cf6243043ff773eaf",
+      "version": "1.0.0"
+    },
+    "USDt": {
+      "address": "0xe8b8abb630b396a513089de19395d9425c133912",
+      "symbol": "USDt",
+      "decimals": 6,
       "version": "1.0.0"
     }
   },
@@ -41,12 +47,9 @@
   "governance": {
     "type": "decentralized",
     "validators": [
-      "Tipspay Blockchain Technologies Limited",
-      "Partner A",
-      "Partner B",
-      "Partner C"
+      "Tipspay Blockchain Technologies Limited"
     ]
   },
   "version": "1.0.0",
-  "updatedAt": "2026-02-11T10:00:00+03:00"
+  "updatedAt": "2026-02-11T16:54:00+03:00"
 }
