@@ -1,0 +1,12 @@
+{
+  "chains": [
+    "chains/tipspay-mainnet.json",
+    "chains/tipspay-testnet.json",
+    "chains/kaleido-dev.json"
+  ],
+  "contracts": [
+    "contracts/wTPSC/deployments.json",
+    "contracts/ComplianceManager/deployments.json",
+    "contracts/AuditLog/deployments.json"
+  ]
+}
