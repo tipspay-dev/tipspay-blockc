@@ -1,4 +1,4 @@
-For more information lease check /docs
+For more information please check /docs
 
 
 
