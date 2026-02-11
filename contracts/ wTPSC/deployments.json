@@ -6,7 +6,7 @@
     "blockNumber": 0,
     "verified": false,
     "version": "1.0.0",
-    "updatedAt": "2026-02-11T10:05:00+03:00"
+    "updatedAt": "2026-02-11T15:40:00+03:00"
   },
   "tipspay-testnet": {
     "address": "",
@@ -15,16 +15,15 @@
     "blockNumber": 0,
     "verified": false,
     "version": "1.0.0",
-    "updatedAt": "2026-02-11T10:05:00+03:00"
+    "updatedAt": "2026-02-11T15:40:00+03:00"
   },
   "tipspay-mainnet": {
-    "address": "",
+    "address": "0x333d587427548ea0e671b163e2c9b7cba030f4ea",
     "deployer": "",
     "txHash": "",
     "blockNumber": 0,
-    "verified": false,
+    "verified": true,
     "version": "1.0.0",
-    "updatedAt": "2026-02-11T10:05:00+03:00"
+    "updatedAt": "2026-02-11T15:40:00+03:00"
   }
 }
-
